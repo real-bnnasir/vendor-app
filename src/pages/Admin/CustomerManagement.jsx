@@ -1,126 +1,49 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useAdmin } from "../../contex/AdminContext";
 import {
   Search,
   Filter,
-  Check,
-  X,
   Pause,
+  Play,
   Trash2,
   Eye,
   MoreHorizontal,
-  UserCheck,
+  Users,
   AlertCircle,
   CheckCircle,
-  Clock,
   Download,
   Mail,
   Phone,
+  X,
   MapPin,
-  Calendar,
+  ShoppingCart,
   DollarSign,
-  Store,
-  User,
+  Calendar,
 } from "lucide-react";
-import { _get, _post, _put } from "../../utils/Helper";
-import toast from "react-hot-toast";
 
-const VendorManagement = () => {
-  const { deleteVendor } = useAdmin();
+const CustomerManagement = () => {
+  const { customers, suspendCustomer, activateCustomer, deleteCustomer } =
+    useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedVendors, setSelectedVendors] = useState([]);
-  const [viewingVendor, setViewingVendor] = useState(null);
-  const [vendors, setVendors] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [selectedCustomers, setSelectedCustomers] = useState([]);
+  const [viewingCustomer, setViewingCustomer] = useState(null);
 
-  const get_customers = () => {
-    setLoading(true);
-    _get(
-      "api/get_all_vendors",
-      (response) => {
-        if (response.success) {
-          setVendors(response.results);
-          setLoading(false);
-        } else {
-          alert("Error on getting users");
-          setLoading(false);
-        }
-      },
-      (error) => {
-        alert("Error on getting users");
-        setLoading(false);
-      }
-    );
-  };
-
-  useEffect(() => {
-    get_customers();
-  }, []);
-
-  const approveVendor = (id) => {
-    updatevendorstatus(id, "approved");
-  };
-
-  const rejectVendor = (id) => {
-    updatevendorstatus(id, "rejected");
-  };
-
-  const suspendVendor = (id) => {
-    updatevendorstatus(id, "suspended");
-  };
-
-  const updatevendorstatus = (id, status, email) => {
-    const obj = {
-      id,
-      status,
-      email,
-    };
-
-    setLoading(true);
-
-    _post(
-      "api/updatevendorstatus",
-      obj,
-      (res) => {
-        setLoading(false);
-        if (res.success) {
-          toast.success("vendor status updated");
-          get_customers();
-        } else {
-          toast.error("Error updating vendor status");
-        }
-      },
-      (err) => {
-        setLoading(false);
-        toast.error("An error occurred while updating status");
-        console.error(err);
-      }
-    );
-  };
-
-  const filteredVendors = vendors.filter((vendor) => {
+  const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =
-      vendor.firstname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.type_of_bussiness
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
-      filterStatus === "all" || vendor.status === filterStatus;
+      filterStatus === "all" || customer.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "approved":
+      case "active":
         return "bg-green-100 text-green-800 border border-green-200";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 border border-yellow-200";
-      case "rejected":
-        return "bg-red-100 text-red-800 border border-red-200";
       case "suspended":
-        return "bg-gray-100 text-gray-800 border border-gray-200";
+        return "bg-red-100 text-red-800 border border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border border-gray-200";
     }
@@ -128,11 +51,8 @@ const VendorManagement = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "approved":
+      case "active":
         return <CheckCircle size={14} />;
-      case "pending":
-        return <Clock size={14} />;
-      case "rejected":
       case "suspended":
         return <AlertCircle size={14} />;
       default:
@@ -140,57 +60,54 @@ const VendorManagement = () => {
     }
   };
 
-  const handleSelectVendor = (vendorId) => {
-    setSelectedVendors((prev) =>
-      prev.includes(vendorId)
-        ? prev.filter((id) => id !== vendorId)
-        : [...prev, vendorId]
+  const handleSelectCustomer = (customerId) => {
+    setSelectedCustomers((prev) =>
+      prev.includes(customerId)
+        ? prev.filter((id) => id !== customerId)
+        : [...prev, customerId]
     );
   };
 
   const handleSelectAll = () => {
-    setSelectedVendors((prev) =>
-      prev.length === filteredVendors.length
+    setSelectedCustomers((prev) =>
+      prev.length === filteredCustomers.length
         ? []
-        : filteredVendors.map((vendor) => vendor.id)
+        : filteredCustomers.map((customer) => customer.id)
     );
   };
 
   const handleBulkAction = (action) => {
-    selectedVendors.forEach((vendorId) => {
+    selectedCustomers.forEach((customerId) => {
       switch (action) {
-        case "approve":
-          approveVendor(vendorId);
-          break;
-        case "reject":
-          rejectVendor(vendorId);
-          break;
         case "suspend":
-          suspendVendor(vendorId);
+          suspendCustomer(customerId);
+          break;
+        case "activate":
+          activateCustomer(customerId);
           break;
         default:
           break;
       }
     });
-    setSelectedVendors([]);
+    setSelectedCustomers([]);
   };
 
-  const handleDeleteVendor = (vendorId) => {
+  const handleDeleteCustomer = (customerId) => {
     if (
       window.confirm(
-        "Are you sure you want to delete this vendor? This action cannot be undone."
+        "Are you sure you want to delete this customer? This action cannot be undone."
       )
     ) {
-      deleteVendor(vendorId);
+      deleteCustomer(customerId);
     }
   };
 
-  const handleViewVendor = (vendor) => {
-    setViewingVendor(vendor);
+  const handleViewCustomer = (customer) => {
+    setViewingCustomer(customer);
   };
 
   const closeModal = () => {
-    setViewingVendor(null);
+    setViewingCustomer(null);
   };
 
   return (
@@ -199,10 +116,10 @@ const VendorManagement = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Vendor Management
+            Customer Management
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage and approve vendor applications.
+            Manage and monitor customer accounts.
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
@@ -223,7 +140,7 @@ const VendorManagement = () => {
             />
             <input
               type="text"
-              placeholder="Search vendors..."
+              placeholder="Search customers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
@@ -241,9 +158,7 @@ const VendorManagement = () => {
                 className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 appearance-none bg-white"
               >
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
+                <option value="active">Active</option>
                 <option value="suspended">Suspended</option>
               </select>
             </div>
@@ -252,29 +167,23 @@ const VendorManagement = () => {
       </div>
 
       {/* Bulk Actions */}
-      {selectedVendors.length > 0 && (
+      {selectedCustomers.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-red-800">
-              {selectedVendors.length} vendor
-              {selectedVendors.length !== 1 ? "s" : ""} selected
+              {selectedCustomers.length} customer
+              {selectedCustomers.length !== 1 ? "s" : ""} selected
             </span>
             <div className="flex items-center space-x-3">
               <button
-                onClick={() => handleBulkAction("approve")}
+                onClick={() => handleBulkAction("activate")}
                 className="text-sm text-green-700 hover:text-green-800 font-medium"
               >
-                Approve All
-              </button>
-              <button
-                onClick={() => handleBulkAction("reject")}
-                className="text-sm text-red-700 hover:text-red-800 font-medium"
-              >
-                Reject All
+                Activate All
               </button>
               <button
                 onClick={() => handleBulkAction("suspend")}
-                className="text-sm text-gray-700 hover:text-gray-800 font-medium"
+                className="text-sm text-red-700 hover:text-red-800 font-medium"
               >
                 Suspend All
               </button>
@@ -283,7 +192,7 @@ const VendorManagement = () => {
         </div>
       )}
 
-      {/* Vendors Table */}
+      {/* Customers Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto min-w-full">
           <table className="min-w-full">
@@ -292,25 +201,24 @@ const VendorManagement = () => {
                 <th className="px-6 py-3 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedVendors.length === filteredVendors.length}
+                    checked={
+                      selectedCustomers.length === filteredCustomers.length
+                    }
                     onChange={handleSelectAll}
                     className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                   />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vendor
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Business
+                  Customer
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Contact
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stores
+                  Orders
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Revenue
+                  Total Spent
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -324,13 +232,13 @@ const VendorManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredVendors.map((vendor) => (
-                <tr key={vendor.id} className="hover:bg-gray-50">
+              {filteredCustomers.map((customer) => (
+                <tr key={customer.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
-                      checked={selectedVendors.includes(vendor.id)}
-                      onChange={() => handleSelectVendor(vendor.id)}
+                      checked={selectedCustomers.includes(customer.id)}
+                      onChange={() => handleSelectCustomer(customer.id)}
                       className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                     />
                   </td>
@@ -338,91 +246,82 @@ const VendorManagement = () => {
                     <div className="flex items-center">
                       <img
                         className="h-10 w-10 rounded-full object-cover"
-                        src={vendor.avatar || "/avatar.png"}
-                        alt={vendor.firstname}
+                        src={customer.avatar}
+                        alt={customer.name}
                       />
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {vendor.firstname} {vendor.lastname}
+                          {customer.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {vendor.email}
+                          {customer.email}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {vendor.type_of_bussiness}
+                    <div className="text-sm text-gray-900 flex items-center">
+                      <Phone size={14} className="mr-2 text-gray-400" />
+                      {customer.phone}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {customer.address}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vendor.phone}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {vendor.storesCount || 0}
+                      {customer.totalOrders}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      &#8358;{vendor.totalRevenue?.toLocaleString()}
+                      ${customer.totalSpent.toLocaleString()}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                        vendor.status
+                        customer.status
                       )}`}
                     >
-                      {getStatusIcon(vendor.status) && (
+                      {getStatusIcon(customer.status) && (
                         <span className="mr-1">
-                          {getStatusIcon(vendor.status)}
+                          {getStatusIcon(customer.status)}
                         </span>
                       )}
-                      {vendor.status}
+                      {customer.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(vendor.createdAt)?.toLocaleDateString()}
+                    {new Date(customer.joinDate).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      {vendor.status === "pending" && (
-                        <>
-                          <button
-                            onClick={() => approveVendor(vendor.id)}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
-                          >
-                            <Check size={12} className="mr-1" />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => rejectVendor(vendor.id)}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
-                          >
-                            <X size={12} className="mr-1" />
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {vendor.status === "approved" && (
+                      {customer.status === "active" ? (
                         <button
-                          onClick={() => suspendVendor(vendor.id)}
-                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                          onClick={() => suspendCustomer(customer.id)}
+                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
                         >
                           <Pause size={12} className="mr-1" />
                           Suspend
                         </button>
+                      ) : (
+                        <button
+                          onClick={() => activateCustomer(customer.id)}
+                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+                        >
+                          <Play size={12} className="mr-1" />
+                          Activate
+                        </button>
                       )}
                       <button
-                        onClick={() => handleViewVendor(vendor)}
+                        onClick={() => handleViewCustomer(customer)}
                         className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
                       >
                         <Eye size={14} />
                       </button>
                       <button
-                        onClick={() => handleDeleteVendor(vendor.id)}
+                        onClick={() => handleDeleteCustomer(customer.id)}
                         className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md"
                       >
                         <Trash2 size={14} />
@@ -436,13 +335,13 @@ const VendorManagement = () => {
         </div>
       </div>
 
-      {/* Vendor Details Modal */}
-      {viewingVendor && (
+      {/* Customer Details Modal */}
+      {viewingCustomer && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">
-                Vendor Details
+                Customer Details
               </h2>
               <button
                 onClick={closeModal}
@@ -456,26 +355,26 @@ const VendorManagement = () => {
               {/* Basic Info */}
               <div className="flex items-start space-x-4">
                 <img
-                  src={viewingVendor.avatar}
-                  alt={viewingVendor.name}
+                  src={viewingCustomer.avatar}
+                  alt={viewingCustomer.name}
                   className="w-20 h-20 rounded-full object-cover"
                 />
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {viewingVendor.name}
+                    {viewingCustomer.name}
                   </h3>
-                  <p className="text-gray-600">{viewingVendor.businessName}</p>
+                  <p className="text-gray-600">{viewingCustomer.email}</p>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize mt-2 ${getStatusColor(
-                      viewingVendor.status
+                      viewingCustomer.status
                     )}`}
                   >
-                    {getStatusIcon(viewingVendor.status) && (
+                    {getStatusIcon(viewingCustomer.status) && (
                       <span className="mr-1">
-                        {getStatusIcon(viewingVendor.status)}
+                        {getStatusIcon(viewingCustomer.status)}
                       </span>
                     )}
-                    {viewingVendor.status}
+                    {viewingCustomer.status}
                   </span>
                 </div>
               </div>
@@ -485,51 +384,59 @@ const VendorManagement = () => {
                 <h4 className="text-sm font-medium text-gray-900 mb-3">
                   Contact Information
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <Mail size={16} className="text-gray-400" />
                     <span className="text-sm text-gray-600">
-                      {viewingVendor.email}
+                      {viewingCustomer.email}
                     </span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone size={16} className="text-gray-400" />
                     <span className="text-sm text-gray-600">
-                      {viewingVendor.phone}
+                      {viewingCustomer.phone}
+                    </span>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <MapPin size={16} className="text-gray-400 mt-0.5" />
+                    <span className="text-sm text-gray-600">
+                      {viewingCustomer.address}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Business Stats */}
+              {/* Purchase Statistics */}
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Business Statistics
+                  Purchase Statistics
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <Store size={16} className="text-blue-600" />
+                      <ShoppingCart size={16} className="text-blue-600" />
                       <span className="text-sm font-medium text-gray-900">
-                        {viewingVendor.storesCount}
+                        {viewingCustomer.totalOrders}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Stores</p>
+                    <p className="text-xs text-gray-500 mt-1">Total Orders</p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <DollarSign size={16} className="text-green-600" />
                       <span className="text-sm font-medium text-gray-900">
-                        ${viewingVendor.totalRevenue.toLocaleString()}
+                        ${viewingCustomer.totalSpent.toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Total Revenue</p>
+                    <p className="text-xs text-gray-500 mt-1">Total Spent</p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <Calendar size={16} className="text-purple-600" />
                       <span className="text-sm font-medium text-gray-900">
-                        {new Date(viewingVendor.joinDate).toLocaleDateString()}
+                        {new Date(
+                          viewingCustomer.joinDate
+                        ).toLocaleDateString()}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Join Date</p>
@@ -537,62 +444,29 @@ const VendorManagement = () => {
                 </div>
               </div>
 
-              {/* Documents */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Submitted Documents
-                </h4>
-                <div className="space-y-2">
-                  {viewingVendor.documents.map((doc, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <span className="text-sm text-gray-700">{doc}</span>
-                      <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                        Download
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Action Buttons */}
               <div className="flex space-x-3 pt-4 border-t border-gray-200">
-                {viewingVendor.status === "pending" && (
-                  <>
-                    <button
-                      onClick={() => {
-                        approveVendor(viewingVendor.id);
-                        closeModal();
-                      }}
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <Check size={16} className="mr-2" />
-                      Approve Vendor
-                    </button>
-                    <button
-                      onClick={() => {
-                        rejectVendor(viewingVendor.id);
-                        closeModal();
-                      }}
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      <X size={16} className="mr-2" />
-                      Reject Vendor
-                    </button>
-                  </>
-                )}
-                {viewingVendor.status === "approved" && (
+                {viewingCustomer.status === "active" ? (
                   <button
                     onClick={() => {
-                      suspendVendor(viewingVendor.id);
+                      suspendCustomer(viewingCustomer.id);
                       closeModal();
                     }}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
                     <Pause size={16} className="mr-2" />
-                    Suspend Vendor
+                    Suspend Customer
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      activateCustomer(viewingCustomer.id);
+                      closeModal();
+                    }}
+                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Play size={16} className="mr-2" />
+                    Activate Customer
                   </button>
                 )}
               </div>
@@ -602,16 +476,16 @@ const VendorManagement = () => {
       )}
 
       {/* Empty State */}
-      {filteredVendors.length === 0 && (
+      {filteredCustomers.length === 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <UserCheck size={48} className="mx-auto text-gray-400 mb-4" />
+          <Users size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No vendors found
+            No customers found
           </h3>
           <p className="text-gray-600">
             {searchTerm || filterStatus !== "all"
               ? "Try adjusting your search or filter criteria."
-              : "Vendor applications will appear here when submitted."}
+              : "Customer accounts will appear here when users register."}
           </p>
         </div>
       )}
@@ -619,4 +493,4 @@ const VendorManagement = () => {
   );
 };
 
-export default VendorManagement;
+export default CustomerManagement;

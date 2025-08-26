@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useStore } from "../contex/StoreContext";
 import {
   Search,
   Filter,
@@ -17,13 +18,14 @@ import {
 import { _get } from "../utils/Helper";
 import { useSelector } from "react-redux";
 
-const Orders = ({ currentStore }) => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+const Orders = () => {
+  const { currentStore, updateOrderStatus } = useStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedOrders, setSelectedOrders] = useState([]);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalRevenue: 0,
@@ -31,61 +33,69 @@ const Orders = ({ currentStore }) => {
     deliveredOrders: 0,
   });
 
+  const vendorId = user?.user_id;
+
+  if (!currentStore) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <ShoppingCart size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No Store Selected
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Please select a store from the sidebar to manage orders.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const storeOrders = orders.filter(
+    (order) =>
+      order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredOrders = storeOrders.filter((order) => {
+    const matchesSearch =
+      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      filterStatus === "all" || order.status === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        if (!currentStore?.id) return;
-
         setLoading(true);
-        _get(`api/get_vendor_orders/${currentStore.id}`, (resp) => {
-          if (!resp || !resp.success) {
-            console.error("Failed to fetch orders:", resp?.message);
-            return;
+        _get(`api/get_vendor_orders/${vendorId}`, (resp) => {
+          if (resp.success && resp.orders) {
+            setOrders(resp.orders);
+
+            // Calculate stats
+            const totalOrders = resp.orders.length;
+            const totalRevenue = resp.orders.reduce(
+              (sum, order) => sum + (order.subtotal || 0),
+              0
+            );
+            const pendingOrders = resp.orders.filter(
+              (order) => order.status === "processing"
+            ).length;
+            const deliveredOrders = resp.orders.filter(
+              (order) => order.status === "delivered"
+            ).length;
+
+            setStats({
+              totalOrders,
+              totalRevenue,
+              pendingOrders,
+              deliveredOrders,
+            });
           }
-
-          // Transform the backend data to match frontend expectations
-          const transformedOrders = (resp.orders || []).map((order) => ({
-            id: order.id,
-            storeId: currentStore.id,
-            status: order.status,
-            total: order.total,
-            subtotal: order.subtotal,
-            date: order.date,
-            customer: {
-              name: `${order.first_name} ${order.last_name}`,
-              email: "", // Not provided in backend response
-              avatar: "https://via.placeholder.com/32", // Default avatar
-            },
-            products: (order.items || []).map((item) => ({
-              id: item.product_id,
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              image: item.image,
-            })),
-          }));
-
-          setOrders(transformedOrders);
-
-          // Calculate stats
-          const totalOrders = transformedOrders.length;
-          const totalRevenue = transformedOrders.reduce(
-            (sum, order) => sum + (order.total || 0),
-            0
-          );
-          const pendingOrders = transformedOrders.filter(
-            (order) => order.status === "pending"
-          ).length;
-          const deliveredOrders = transformedOrders.filter(
-            (order) => order.status === "delivered"
-          ).length;
-
-          setStats({
-            totalOrders,
-            totalRevenue,
-            pendingOrders,
-            deliveredOrders,
-          });
         });
       } catch (error) {
         console.error("Error fetching orders:", error);
@@ -94,40 +104,14 @@ const Orders = ({ currentStore }) => {
       }
     };
 
-    fetchOrders();
-  }, [currentStore?.id]);
-
-  const updateOrderStatus = async (orderId, newStatus) => {
-    try {
-      // You'll need to implement this API call based on your backend
-      // This is just a placeholder implementation
-      await _get(`api/update_order_status/${orderId}/${newStatus}`, (resp) => {
-        if (resp.success) {
-          setOrders((prevOrders) =>
-            prevOrders.map((order) =>
-              order.id === orderId ? { ...order, status: newStatus } : order
-            )
-          );
-        }
-      });
-    } catch (error) {
-      console.error("Error updating order status:", error);
+    if (vendorId) {
+      fetchOrders();
     }
-  };
-
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter =
-      filterStatus === "all" || order.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  }, [vendorId]);
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "pending":
+      case "processing":
         return "bg-yellow-100 text-yellow-800 border border-yellow-200";
       case "confirmed":
         return "bg-blue-100 text-blue-800 border border-blue-200";
@@ -144,7 +128,7 @@ const Orders = ({ currentStore }) => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "pending":
+      case "processing":
         return <Clock size={14} />;
       case "confirmed":
         return <CheckCircle size={14} />;
@@ -161,6 +145,12 @@ const Orders = ({ currentStore }) => {
 
   const handleStatusUpdate = (orderId, newStatus) => {
     updateOrderStatus(orderId, newStatus);
+    // Update local state to reflect the change immediately
+    setOrders(
+      orders.map((order) =>
+        order.id === orderId ? { ...order, status: newStatus } : order
+      )
+    );
   };
 
   const handleSelectOrder = (orderId) => {
@@ -181,39 +171,10 @@ const Orders = ({ currentStore }) => {
 
   const handleBulkStatusUpdate = (status) => {
     selectedOrders.forEach((orderId) => {
-      updateOrderStatus(orderId, status);
+      handleStatusUpdate(orderId, status);
     });
     setSelectedOrders([]);
   };
-
-  if (!currentStore) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <ShoppingCart size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No Store Selected
-          </h3>
-          {/* {JSON.stringify(user)} */}
-          <p className="text-gray-600 mb-6">
-            Please select a store from the sidebar to manage orders.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Loading orders...
-          </h3>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 space-y-6">
@@ -261,7 +222,7 @@ const Orders = ({ currentStore }) => {
                 className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
               >
                 <option value="all">All Orders</option>
-                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="shipped">Shipped</option>
                 <option value="delivered">Delivered</option>
@@ -305,168 +266,165 @@ const Orders = ({ currentStore }) => {
       )}
 
       {/* Orders Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedOrders.length === filteredOrders.length &&
-                      filteredOrders.length > 0
-                    }
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Products
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto overflow-y-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={selectedOrders.includes(order.id)}
-                      onChange={() => handleSelectOrder(order.id)}
+                      checked={
+                        filteredOrders.length > 0 &&
+                        selectedOrders.length === filteredOrders.length
+                      }
+                      onChange={handleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {order.id}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <img
-                        className="h-8 w-8 rounded-full"
-                        src={
-                          order.customer?.avatar ||
-                          "https://via.placeholder.com/32"
-                        }
-                        alt={order.customer?.name}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Products
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.includes(order.id)}
+                        onChange={() => handleSelectOrder(order.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {order.customer?.name || "N/A"}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {order.customer?.email || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {order.id}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {order.items?.[0]?.image && (
+                          <img
+                            className="h-8 w-8 rounded-full"
+                            src={order.items[0].image}
+                            alt={order.first_name}
+                          />
+                        )}
+                        <div className="ml-3">
+                          <div className="text-sm font-medium text-gray-900">
+                            {order.first_name} {order.last_name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {order.city}, {order.state}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      {order.products?.map((product, index) => (
-                        <div key={index}>
-                          {product.name} (×{product.quantity})
-                        </div>
-                      )) || "N/A"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      ${order.total?.toFixed(2) || "0.00"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                        order.status
-                      )}`}
-                    >
-                      <span className="mr-1">
-                        {getStatusIcon(order.status)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {order.items?.map((item, index) => (
+                          <div key={index}>
+                            {item.name} (×{item.quantity})
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        ${order.subtotal?.toLocaleString() || "0.00"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
+                          order.status
+                        )}`}
+                      >
+                        <span className="mr-1">
+                          {getStatusIcon(order.status)}
+                        </span>
+                        {order.status}
                       </span>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.date
-                      ? new Date(order.date).toLocaleDateString()
-                      : "N/A"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      {order.status === "pending" && (
-                        <>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(order.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        {order.status === "processing" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                handleStatusUpdate(order.id, "confirmed")
+                              }
+                              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+                            >
+                              <Check size={12} className="mr-1" />
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleStatusUpdate(order.id, "cancelled")
+                              }
+                              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                            >
+                              <X size={12} className="mr-1" />
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        {order.status === "confirmed" && (
                           <button
                             onClick={() =>
-                              handleStatusUpdate(order.id, "confirmed")
+                              handleStatusUpdate(order.id, "shipped")
                             }
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
                           >
-                            <Check size={12} className="mr-1" />
-                            Confirm
+                            <Truck size={12} className="mr-1" />
+                            Ship
                           </button>
-                          <button
-                            onClick={() =>
-                              handleStatusUpdate(order.id, "cancelled")
-                            }
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
-                          >
-                            <X size={12} className="mr-1" />
-                            Cancel
-                          </button>
-                        </>
-                      )}
-                      {order.status === "confirmed" && (
-                        <button
-                          onClick={() =>
-                            handleStatusUpdate(order.id, "shipped")
-                          }
-                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-                        >
-                          <Truck size={12} className="mr-1" />
-                          Ship
+                        )}
+                        <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
+                          <Eye size={14} />
                         </button>
-                      )}
-                      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
-                        <Eye size={14} />
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
-                        <MoreHorizontal size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
+                          <MoreHorizontal size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
       {/* Empty State */}
       {filteredOrders.length === 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <ShoppingCart size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No orders found
+            {loading ? "Loading orders..." : "No orders found"}
           </h3>
           <p className="text-gray-600">
             {searchTerm || filterStatus !== "all"

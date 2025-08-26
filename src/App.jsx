@@ -103,21 +103,30 @@ import VendorManagement from "./pages/Admin/VendorManagement";
 import { useSelector } from "react-redux";
 import { Provider } from "react-redux";
 import store from "./redux/store";
+import CustomerManagement from "./pages/Admin/CustomerManagement";
+import BannerManagement from "./pages/Admin/BannerManagement";
+import Analytics from "./pages/Admin/Analytics";
+import Settings from "./pages/Admin/Settings";
+import { AuthProvider, useAuth } from "./contex/AuthContext";
 
 const AppContent = () => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, isAdmin, isVendor } = useAuth();
 
   if (!isAuthenticated) {
     return <LoginForm />;
   }
 
-  if (user?.role === "admin") {
+  if (isAdmin()) {
     return (
       <AdminProvider>
         <AdminLayout>
           <Routes>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/vendors" element={<VendorManagement />} />
+            <Route path="/admin/customers" element={<CustomerManagement />} />
+            <Route path="/admin/banners" element={<BannerManagement />} />
+            <Route path="/admin/analytics" element={<Analytics />} />
+            <Route path="/admin/settings" element={<Settings />} />
             <Route path="*" element={<AdminDashboard />} />
           </Routes>
         </AdminLayout>
@@ -125,7 +134,7 @@ const AppContent = () => {
     );
   }
 
-  if (user?.role === "vendor") {
+  if (isVendor()) {
     return (
       <StoreProvider>
         <Layout>
@@ -135,10 +144,7 @@ const AppContent = () => {
             <Route path="/stores/add" element={<AddStore />} />
             <Route path="/products" element={<Products />} />
             <Route path="/products/add" element={<AddProduct />} />
-            <Route
-              path="/products/edit/:product_id"
-              element={<EditProduct />}
-            />
+            <Route path="/products/edit/:id" element={<EditProduct />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="*" element={<Dashboard />} />
           </Routes>
@@ -153,9 +159,11 @@ const AppContent = () => {
 function App() {
   return (
     <Provider store={store}>
-      <Router>
-        <AppContent />
-      </Router>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
     </Provider>
   );
 }

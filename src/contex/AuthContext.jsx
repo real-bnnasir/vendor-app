@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
+import { useSelector } from "react-redux";
 
 const AuthContext = createContext();
 
@@ -42,8 +43,10 @@ const mockUsers = [
 ];
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // const [user, setUser] = useState(null);
+  // const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   const login = (email, password) => {
     const foundUser = mockUsers.find(

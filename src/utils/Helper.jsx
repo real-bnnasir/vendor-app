@@ -42,16 +42,13 @@ export const _get = (url, success = (f) => f, error = (f) => f) => {
 };
 
 export const _put = (url, data, success = (f) => f, error = (f) => f) => {
-  const headers = {};
 
-  // Only set Content-Type to JSON if we're not sending FormData
-  if (!(data instanceof FormData)) {
-    headers["Content-Type"] = "application/json";
-    data = JSON.stringify(data);
-  }
   fetch(`${server_url}/${url}`, {
     method: "PUT",
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      authorization: `${token}`,
+    },
     body: JSON.stringify(data),
   })
     .then((raw) => raw.json())

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contex/AuthContext";
 import { useStore } from "../contex/StoreContext";
+import logo from "../assets/images/KASUWAMALL_LOGO.png";
 import {
   Menu,
   X,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/action/authAction";
+import toast from "react-hot-toast";
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +26,7 @@ const Layout = ({ children }) => {
   const location = useLocation();
   // const { user, logout } = useAuth();
   const { stores, currentStore, setCurrentStore } = useStore();
+
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   if (!isAuthenticated) {
@@ -48,6 +51,7 @@ const Layout = ({ children }) => {
 
   const handleLogout = () => {
     dispatch(logout());
+    toast.success("Logged out successfully!");
     navigate("/");
   };
 
@@ -63,14 +67,16 @@ const Layout = ({ children }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+        className={`fixed inset-y-0 left-0 z-50 h-screen w-64 border-gray-200 border-r bg-red-950 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">VendorHub</h1>
+            <div className="px-10">
+              <img src={logo} className="w-100 h-16" alt="" />
+            </div>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
@@ -84,7 +90,7 @@ const Layout = ({ children }) => {
             <div className="relative">
               <button
                 onClick={() => setStoreDropdownOpen(!storeDropdownOpen)}
-                className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="w-full flex items-center justify-between p-3 bg-red-800 rounded-lg hover:bg-red-900 transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   {currentStore?.logo ? (
@@ -94,15 +100,15 @@ const Layout = ({ children }) => {
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
                       <Store size={16} className="text-blue-600" />
                     </div>
                   )}
                   <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-red-100">
                       {currentStore?.name || "Select Store"}
                     </p>
-                    <p className="text-xs text-gray-500">Current store</p>
+                    <p className="text-xs text-gray-400">Current store</p>
                   </div>
                 </div>
                 <ChevronDown
@@ -115,11 +121,11 @@ const Layout = ({ children }) => {
 
               {/* Store Dropdown */}
               {storeDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-red-800 border border-red-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                   <div className="p-2">
                     <Link
                       to="/stores/add"
-                      className="flex items-center w-full px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
+                      className="flex items-center w-full px-3 py-2 text-sm text-red-100 hover:bg-red-950 rounded-md"
                       onClick={() => {
                         setStoreDropdownOpen(false);
                         setSidebarOpen(false);
@@ -137,10 +143,10 @@ const Layout = ({ children }) => {
                           setCurrentStore(store);
                           setStoreDropdownOpen(false);
                         }}
-                        className={`flex items-center w-full px-4 py-3 text-sm hover:bg-gray-50 ${
+                        className={`flex items-center w-full px-4 py-3 text-sm hover:bg-red-900 ${
                           currentStore?.id === store.id
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700"
+                            ? "bg-red-950 text-red-100"
+                            : "text-red-200"
                         }`}
                       >
                         {store.logo ? (
@@ -178,8 +184,8 @@ const Layout = ({ children }) => {
                   to={item.href}
                   className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive(item.href)
-                      ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      ? "bg-red-50 text-red-900 border-r-2 border-red-700"
+                      : "text-red-50 hover:text-red-900 hover:bg-red-50"
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
@@ -191,7 +197,7 @@ const Layout = ({ children }) => {
           </nav>
 
           {/* User section */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-gray-200 p-4 flex-shrink-0">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <User size={16} className="text-blue-600" />
@@ -204,13 +210,13 @@ const Layout = ({ children }) => {
               </div>
             </div>
             <div className="space-y-1">
-              <button className="flex items-center w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+              <button className="flex items-center w-full px-3 py-2 text-sm text-red-200 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
                 <Settings size={16} className="mr-3" />
                 Settings
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+                className="flex items-center w-full px-3 py-2 text-sm text-red-200  hover:bg-red-800 rounded-lg"
               >
                 <LogOut size={16} className="mr-3" />
                 Sign out
@@ -221,9 +227,9 @@ const Layout = ({ children }) => {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
         {/* Top header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 h-16 flex items-center justify-between px-6">
+        <header className="bg-red-950 shadow-sm border-b border-gray-200 h-16 flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-40">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"

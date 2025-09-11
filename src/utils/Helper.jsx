@@ -42,7 +42,7 @@ export const _get = (url, success = (f) => f, error = (f) => f) => {
 };
 
 export const _put = (url, data, success = (f) => f, error = (f) => f) => {
-
+  const token = localStorage.getItem("@@token");
   fetch(`${server_url}/${url}`, {
     method: "PUT",
     headers: {
@@ -60,10 +60,8 @@ export const _put = (url, data, success = (f) => f, error = (f) => f) => {
     });
 };
 
-
 export const _putImage = (url, data, success = (f) => f, error = (f) => f) => {
   const headers = {};
-
 
   fetch(`${server_url}/${url}`, {
     method: "PUT",

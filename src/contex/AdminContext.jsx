@@ -100,10 +100,58 @@ const mockBanners = [
   },
 ];
 
+const mockDeliveryPersonnel = [
+  {
+    id: "1",
+    name: "Mike Johnson",
+    email: "mike@delivery.com",
+    phone: "+1 (555) 111-1111",
+    status: "available",
+    avatar:
+      "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&dpr=2",
+    vehicle: "Motorcycle",
+    zone: "Downtown",
+    activeOrders: 2,
+    completedDeliveries: 145,
+    rating: 4.8,
+  },
+  {
+    id: "2",
+    name: "Sarah Wilson",
+    email: "sarah@delivery.com",
+    phone: "+1 (555) 222-2222",
+    status: "busy",
+    avatar:
+      "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&dpr=2",
+    vehicle: "Van",
+    zone: "Uptown",
+    activeOrders: 1,
+    completedDeliveries: 98,
+    rating: 4.9,
+  },
+  {
+    id: "3",
+    name: "David Brown",
+    email: "david@delivery.com",
+    phone: "+1 (555) 333-3333",
+    status: "available",
+    avatar:
+      "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&dpr=2",
+    vehicle: "Car",
+    zone: "Suburbs",
+    activeOrders: 0,
+    completedDeliveries: 203,
+    rating: 4.7,
+  },
+];
+
 export const AdminProvider = ({ children }) => {
   const [vendors, setVendors] = useState(mockVendors);
   const [customers, setCustomers] = useState(mockCustomers);
   const [banners, setBanners] = useState(mockBanners);
+  const [deliveryPersonnel, setDeliveryPersonnel] = useState(
+    mockDeliveryPersonnel
+  );
 
   // Vendor Management
   const approveVendor = (vendorId) => {
@@ -216,6 +264,12 @@ export const AdminProvider = ({ children }) => {
       0
     );
     const activeBanners = banners.filter((b) => b.status === "active").length;
+    const availableDelivery = deliveryPersonnel.filter(
+      (d) => d.status === "available"
+    ).length;
+    const busyDelivery = deliveryPersonnel.filter(
+      (d) => d.status === "busy"
+    ).length;
 
     return {
       totalVendors,
@@ -225,6 +279,8 @@ export const AdminProvider = ({ children }) => {
       activeCustomers,
       totalRevenue,
       activeBanners,
+      availableDelivery,
+      busyDelivery,
     };
   };
 

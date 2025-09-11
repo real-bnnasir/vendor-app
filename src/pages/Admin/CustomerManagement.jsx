@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAdmin } from "../../contex/AdminContext";
 import {
   Search,
@@ -19,20 +19,47 @@ import {
   ShoppingCart,
   DollarSign,
   Calendar,
+  Banknote,
 } from "lucide-react";
+import { _get, _put } from "../../utils/Helper";
 
 const CustomerManagement = () => {
-  const { customers, suspendCustomer, activateCustomer, deleteCustomer } =
-    useAdmin();
+  const { deleteCustomer } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [viewingCustomer, setViewingCustomer] = useState(null);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const get_customers = () => {
+    setLoading(true);
+    _get(
+      "api/get_all_cutomers",
+      (response) => {
+        if (response.success) {
+          setCustomers(response.results);
+          setLoading(false);
+        } else {
+          alert("Error on getting users");
+          setLoading(false);
+        }
+      },
+      (error) => {
+        alert("Error on getting users");
+        setLoading(false);
+      }
+    );
+  };
+
+  useEffect(() => {
+    get_customers();
+  }, []);
 
   const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+      customer.firstname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
       filterStatus === "all" || customer.status === filterStatus;
     return matchesSearch && matchesFilter;
@@ -100,6 +127,43 @@ const CustomerManagement = () => {
     ) {
       deleteCustomer(customerId);
     }
+  };
+
+  const suspendCustomer = (id) => {
+    updatecustomerstatus(id, "suspended");
+  };
+
+  const activateCustomer = (id) => {
+    updatecustomerstatus(id, "active");
+  };
+
+  const updatecustomerstatus = (id, status, email) => {
+    const obj = {
+      id,
+      status,
+      email,
+    };
+
+    setLoading(true);
+
+    _put(
+      "api/updateusersstatus",
+      obj,
+      (res) => {
+        setLoading(false);
+        if (res.success) {
+          toast.success("Customer status updated");
+          get_customers();
+        } else {
+          toast.error("Error updating Customer status");
+        }
+      },
+      (err) => {
+        setLoading(false);
+        toast.error("An error occurred while updating status");
+        console.error(err);
+      }
+    );
   };
 
   const handleViewCustomer = (customer) => {
@@ -247,11 +311,11 @@ const CustomerManagement = () => {
                       <img
                         className="h-10 w-10 rounded-full object-cover"
                         src={customer.avatar}
-                        alt={customer.name}
+                        alt={customer.firstname}
                       />
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {customer.name}
+                          {customer.firstname} {customer.lastname}
                         </div>
                         <div className="text-sm text-gray-500">
                           {customer.email}
@@ -270,12 +334,12 @@ const CustomerManagement = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {customer.totalOrders}
+                      {customer.totalOrders || 1}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      ${customer.totalSpent.toLocaleString()}
+                      &#8358; {customer.totalSpent?.toLocaleString() || 0}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -293,7 +357,7 @@ const CustomerManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(customer.joinDate).toLocaleDateString()}
+                    {new Date(customer.createdAt)?.toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
@@ -356,12 +420,12 @@ const CustomerManagement = () => {
               <div className="flex items-start space-x-4">
                 <img
                   src={viewingCustomer.avatar}
-                  alt={viewingCustomer.name}
+                  alt={viewingCustomer.firstname}
                   className="w-20 h-20 rounded-full object-cover"
                 />
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {viewingCustomer.name}
+                    {viewingCustomer.firstname + " " + viewingCustomer.lastname}
                   </h3>
                   <p className="text-gray-600">{viewingCustomer.email}</p>
                   <span
@@ -423,9 +487,9 @@ const CustomerManagement = () => {
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <DollarSign size={16} className="text-green-600" />
+                      <Banknote size={16} className="text-green-600" />
                       <span className="text-sm font-medium text-gray-900">
-                        ${viewingCustomer.totalSpent.toLocaleString()}
+                        &#8358; {viewingCustomer.totalSpent?.toLocaleString()}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Total Spent</p>
@@ -435,7 +499,7 @@ const CustomerManagement = () => {
                       <Calendar size={16} className="text-purple-600" />
                       <span className="text-sm font-medium text-gray-900">
                         {new Date(
-                          viewingCustomer.joinDate
+                          viewingCustomer.createdAt
                         ).toLocaleDateString()}
                       </span>
                     </div>

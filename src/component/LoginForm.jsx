@@ -1,8 +1,16 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { login } from "../redux/action/authAction";
-import { Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  AlertCircle,
+  ShoppingBasket,
+  Store,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 const LoginForm = () => {
@@ -45,17 +53,17 @@ const LoginForm = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-100 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock size={32} className="text-white" />
+            <div className="w-16 h-16 bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Store size={32} className="text-white" />
             </div>
             <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
             <p className="text-gray-600 mt-2">
-              Sign in to your VendorHub account
+              Sign in to your KasuwaMall account
             </p>
           </div>
 
@@ -129,11 +137,24 @@ const LoginForm = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-red-900 text-white py-3 px-4 rounded-lg hover:bg-red-950 focus:ring-2 focus:ring-red-800 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
+
+          {/* Sign up link */}
+          <div className="text-center mt-6">
+            <p className="text-gray-600">
+              Don't have an account?{" "}
+              <Link
+                to={"/signup"}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Sign up
+              </Link>
+            </p>
+          </div>
 
           {/* Demo Credentials */}
           {/* <div className="mt-8 pt-6 border-t border-gray-200">

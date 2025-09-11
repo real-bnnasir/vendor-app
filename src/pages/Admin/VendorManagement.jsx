@@ -21,6 +21,8 @@ import {
   DollarSign,
   Store,
   User,
+  Banknote,
+  Play,
 } from "lucide-react";
 import { _get, _post, _put } from "../../utils/Helper";
 import toast from "react-hot-toast";
@@ -70,6 +72,10 @@ const VendorManagement = () => {
     updatevendorstatus(id, "suspended");
   };
 
+  const reapproveVendor = (id) => {
+    updatevendorstatus(id, "approved");
+  };
+
   const updatevendorstatus = (id, status, email) => {
     const obj = {
       id,
@@ -79,8 +85,8 @@ const VendorManagement = () => {
 
     setLoading(true);
 
-    _post(
-      "api/updatevendorstatus",
+    _put(
+      "api/updateusersstatus",
       obj,
       (res) => {
         setLoading(false);
@@ -167,6 +173,9 @@ const VendorManagement = () => {
           break;
         case "suspend":
           suspendVendor(vendorId);
+          break;
+        case "reapprove":
+          reapprove(vendorId);
           break;
         default:
           break;
@@ -357,11 +366,13 @@ const VendorManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vendor.phone}</div>
+                    <div className="text-sm text-gray-900">
+                      {vendor.shopcontact}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {vendor.storesCount || 0}
+                      {vendor.storesCount || 1}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -415,6 +426,16 @@ const VendorManagement = () => {
                           Suspend
                         </button>
                       )}
+
+                      {vendor.status === "suspended" && (
+                        <button
+                          onClick={() => reapproveVendor(vendor.id)}
+                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                        >
+                          <Play size={12} className="mr-1" />
+                          Re-Approve
+                        </button>
+                      )}
                       <button
                         onClick={() => handleViewVendor(vendor)}
                         className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
@@ -457,14 +478,16 @@ const VendorManagement = () => {
               <div className="flex items-start space-x-4">
                 <img
                   src={viewingVendor.avatar}
-                  alt={viewingVendor.name}
+                  alt={viewingVendor.firstname}
                   className="w-20 h-20 rounded-full object-cover"
                 />
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {viewingVendor.name}
+                    {viewingVendor.firstname + " " + viewingVendor.lastname}
                   </h3>
-                  <p className="text-gray-600">{viewingVendor.businessName}</p>
+                  <p className="text-gray-600">
+                    {viewingVendor.type_of_bussiness}
+                  </p>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize mt-2 ${getStatusColor(
                       viewingVendor.status
@@ -511,16 +534,16 @@ const VendorManagement = () => {
                     <div className="flex items-center space-x-2">
                       <Store size={16} className="text-blue-600" />
                       <span className="text-sm font-medium text-gray-900">
-                        {viewingVendor.storesCount}
+                        {viewingVendor.storesCount || 1}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Stores</p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <DollarSign size={16} className="text-green-600" />
+                      <Banknote size={16} className="text-green-600" />
                       <span className="text-sm font-medium text-gray-900">
-                        ${viewingVendor.totalRevenue.toLocaleString()}
+                        &#8358;{viewingVendor.totalRevenue?.toLocaleString()}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Total Revenue</p>
@@ -529,7 +552,7 @@ const VendorManagement = () => {
                     <div className="flex items-center space-x-2">
                       <Calendar size={16} className="text-purple-600" />
                       <span className="text-sm font-medium text-gray-900">
-                        {new Date(viewingVendor.joinDate).toLocaleDateString()}
+                        {new Date(viewingVendor.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Join Date</p>
@@ -543,7 +566,7 @@ const VendorManagement = () => {
                   Submitted Documents
                 </h4>
                 <div className="space-y-2">
-                  {viewingVendor.documents.map((doc, index) => (
+                  {viewingVendor.documents?.map((doc, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"

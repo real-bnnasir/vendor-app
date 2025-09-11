@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAdmin } from "../../contex/AdminContext";
 import {
@@ -13,10 +13,89 @@ import {
   Eye,
   ArrowUpRight,
 } from "lucide-react";
+import { _get } from "../../utils/Helper";
+import toast from "react-hot-toast";
 
 const AdminDashboard = () => {
-  const { vendors, customers, banners, getAnalytics } = useAdmin();
-  const analytics = getAnalytics();
+  const { banners } = useAdmin();
+  const [analytics, setAnalytics] = useState({
+    totalVendors: 0,
+    approvedVendors: 0,
+    pendingVendors: 0,
+    totalCustomers: 0,
+    activeCustomers: 0,
+    totalRevenue: 0,
+  });
+  const [recentVendors, setRecentVendors] = useState([]);
+  const [recentCustomers, setRecentCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      // Fetch vendors
+      const vendorsResponse = await new Promise((resolve, reject) => {
+        _get(
+          "api/get_all_vendors",
+          (response) => resolve(response),
+          (error) => reject(error)
+        );
+      });
+
+      // Fetch customers
+      const customersResponse = await new Promise((resolve, reject) => {
+        _get(
+          "api/get_all_cutomers",
+          (response) => resolve(response),
+          (error) => reject(error)
+        );
+      });
+
+      if (vendorsResponse.success && customersResponse.success) {
+        const vendors = vendorsResponse.results || [];
+        const customers = customersResponse.results || [];
+
+        // Calculate analytics
+        const totalVendors = vendors.length;
+        const approvedVendors = vendors.filter(
+          (v) => v.status === "approved"
+        ).length;
+        const pendingVendors = vendors.filter(
+          (v) => v.status === "pending"
+        ).length;
+
+        const totalCustomers = customers.length;
+        const activeCustomers = customers.filter(
+          (c) => c.status === "active"
+        ).length;
+
+        // For revenue, you might need a separate API call depending on your backend
+        const totalRevenue = 0; // Placeholder - implement actual revenue calculation
+
+        setAnalytics({
+          totalVendors,
+          approvedVendors,
+          pendingVendors,
+          totalCustomers,
+          activeCustomers,
+          totalRevenue,
+        });
+
+        // Get recent vendors and customers
+        setRecentVendors(vendors.slice(0, 5));
+        setRecentCustomers(customers.slice(0, 5));
+      }
+    } catch (error) {
+      toast.error("Error fetching dashboard data");
+      console.error("Dashboard data fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const stats = [
     {
@@ -53,8 +132,6 @@ const AdminDashboard = () => {
     },
   ];
 
-  const recentVendors = vendors.slice(0, 5);
-  const recentCustomers = customers.slice(0, 5);
   const activeBanners = banners
     .filter((banner) => banner.status === "active")
     .slice(0, 3);
@@ -91,6 +168,17 @@ const AdminDashboard = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -111,7 +199,7 @@ const AdminDashboard = () => {
           </Link>
           <Link
             to="/admin/banners/add"
-            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-950 transition-colors"
           >
             <Image size={16} className="mr-2" />
             Add Banner
@@ -187,16 +275,16 @@ const AdminDashboard = () => {
                 >
                   <div className="flex items-center space-x-3">
                     <img
-                      src={vendor.avatar}
-                      alt={vendor.name}
+                      src={vendor.avatar || "/avatar.png"}
+                      alt={vendor.firstname}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {vendor.name}
+                        {vendor.firstname} {vendor.lastname}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {vendor.businessName}
+                        {vendor.type_of_bussiness}
                       </p>
                     </div>
                   </div>
@@ -240,16 +328,17 @@ const AdminDashboard = () => {
                 >
                   <div className="flex items-center space-x-3">
                     <img
-                      src={customer.avatar}
-                      alt={customer.name}
+                      src={customer.avatar || "/avatar.png"}
+                      alt={customer.firstname}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {customer.name}
+                        {customer.firstname} {customer.lastname}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {customer.totalOrders} orders • ${customer.totalSpent}
+                        {customer.totalOrders || 0} orders • ₦
+                        {customer.totalSpent || 0}
                       </p>
                     </div>
                   </div>

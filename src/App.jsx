@@ -108,27 +108,44 @@ import BannerManagement from "./pages/Admin/BannerManagement";
 import Analytics from "./pages/Admin/Analytics";
 import Settings from "./pages/Admin/Settings";
 import { AuthProvider, useAuth } from "./contex/AuthContext";
+import OrderManagement from "./pages/Admin/OrderManagement";
+import DeliveryManagement from "./pages/Admin/DeliveryManagement";
+import SignupForm from "./component/SignupForm";
 
 const AppContent = () => {
   const { isAuthenticated, isAdmin, isVendor } = useAuth();
 
+  // if (!isAuthenticated) {
+  //   return <LoginForm />;
+  // }
   if (!isAuthenticated) {
-    return <LoginForm />;
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/signup" element={<SignupForm />} />
+        {/* redirect unknown paths to login */}
+        <Route path="*" element={<LoginForm />} />
+      </Routes>
+    );
   }
 
   if (isAdmin()) {
     return (
       <AdminProvider>
         <AdminLayout>
-          <Routes>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/vendors" element={<VendorManagement />} />
-            <Route path="/admin/customers" element={<CustomerManagement />} />
-            <Route path="/admin/banners" element={<BannerManagement />} />
-            <Route path="/admin/analytics" element={<Analytics />} />
-            <Route path="/admin/settings" element={<Settings />} />
-            <Route path="*" element={<AdminDashboard />} />
-          </Routes>
+          <StoreProvider>
+            <Routes>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/vendors" element={<VendorManagement />} />
+              <Route path="/admin/customers" element={<CustomerManagement />} />
+              <Route path="/admin/orders" element={<OrderManagement />} />
+              <Route path="/admin/delivery" element={<DeliveryManagement />} />
+              <Route path="/admin/banners" element={<BannerManagement />} />
+              <Route path="/admin/analytics" element={<Analytics />} />
+              <Route path="/admin/settings" element={<Settings />} />
+              <Route path="*" element={<AdminDashboard />} />
+            </Routes>
+          </StoreProvider>
         </AdminLayout>
       </AdminProvider>
     );

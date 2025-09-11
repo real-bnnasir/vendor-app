@@ -47,6 +47,7 @@ export const AuthProvider = ({ children }) => {
   // const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const [showSignup, setShowSignup] = useState(false);
 
   const login = (email, password) => {
     const foundUser = mockUsers.find(
@@ -62,7 +63,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    setIsAuthenticated(false);
+    // setIsAuthenticated(false);
   };
 
   const hasPermission = (permission) => {
@@ -84,6 +85,8 @@ export const AuthProvider = ({ children }) => {
         hasPermission,
         isAdmin,
         isVendor,
+        showSignup,
+        setShowSignup,
       }}
     >
       {children}

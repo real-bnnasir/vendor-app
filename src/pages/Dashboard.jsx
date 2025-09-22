@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useStore } from "../contex/StoreContext";
 import {
@@ -11,9 +11,75 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
+import { _get } from "../utils/Helper";
+import { useSelector } from "react-redux";
 
 const Dashboard = () => {
+  const [analytics, setAnalytics] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+  });
   const { currentStore, products, orders } = useStore();
+  const userDetails = JSON.parse(localStorage.getItem("user"));
+  const [loading, setLoading] = useState(false);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  const fetchDashboardData = async () => {
+    const vendorId = user?.user_id || userDetails?.user_id;
+    if (!vendorId) {
+      console.warn("⚠️ No vendor ID found");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Fetch products
+      const productResponse = await new Promise((resolve, reject) => {
+        _get(
+          `api/get-products?shop_id="${vendorId}"`,
+          (response) => resolve(response),
+          (error) => reject(error)
+        );
+      });
+
+      // Fetch orders
+      const ordersResponse = await new Promise((resolve, reject) => {
+        _get(
+          `api/get_vendor_orders/${vendorId}`,
+          (response) => resolve(response),
+          (error) => reject(error)
+        );
+      });
+
+      console.log("📦 Product response:", productResponse);
+      console.log("📦 Orders response:", ordersResponse);
+
+      // ✅ Flatten products (because it's an array of arrays)
+      const products = productResponse?.result
+        ? productResponse.result.flat()
+        : [];
+      // ✅ Orders are inside "orders"
+      const orders = ordersResponse?.orders || [];
+
+      // ✅ Only count "pending" orders
+      const pendingOrdersCount = orders.filter(
+        (o) => o.status === "processing"
+      ).length;
+
+      setAnalytics({
+        totalProducts: products.length,
+        totalOrders: pendingOrdersCount,
+      });
+    } catch (error) {
+      console.error("Dashboard data fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [userDetails.user_id]);
 
   if (!currentStore) {
     return (
@@ -52,15 +118,15 @@ const Dashboard = () => {
   const stats = [
     {
       name: "Total Products",
-      value: storeProducts.length.toString(),
+      value: analytics.totalProducts,
       change: "+12%",
       changeType: "positive",
       icon: Package,
     },
     {
       name: "Pending Orders",
-      value: pendingOrders.length.toString(),
-      change: `+${pendingOrders.length}`,
+      value: analytics.totalOrders,
+      change: `+${analytics.totalOrders}`,
       changeType: "neutral",
       icon: ShoppingCart,
     },
@@ -142,6 +208,7 @@ const Dashboard = () => {
           </Link>
         </div>
       </div>
+      {JSON.stringify(analytics)}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

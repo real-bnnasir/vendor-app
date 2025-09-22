@@ -45,7 +45,7 @@ const OrderManagement = () => {
 
   const filteredOrders = storeOrders.filter((order) => {
     const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
@@ -255,10 +255,10 @@ const OrderManagement = () => {
                   order.storeId === "1" ? "Tech Paradise" : "Fashion Hub";
 
                 return (
-                  <tr key={order.id} className="hover:bg-gray-50">
+                  <tr key={order.order_id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {order.id}
+                        {order.order_id}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -266,7 +266,7 @@ const OrderManagement = () => {
                         {order.items?.[0]?.image && (
                           <img
                             className="h-8 w-8 rounded-full"
-                            src={order.items[0].image}
+                            src={order.items[0].product_image}
                             alt={order.first_name}
                           />
                         )}
@@ -311,7 +311,7 @@ const OrderManagement = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.date).toLocaleDateString()}
+                      {new Date(order.order_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
@@ -389,13 +389,15 @@ const OrderManagement = () => {
                   <div>
                     <span className="text-gray-500">Customer:</span>
                     <span className="ml-2 font-medium">
-                      {assigningDelivery.customer.name}
+                      {assigningDelivery.first_name +
+                        " " +
+                        assigningDelivery.last_name}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-500">Total:</span>
                     <span className="ml-2 font-medium">
-                      ${assigningDelivery.total}
+                      ₦{assigningDelivery.total}
                     </span>
                   </div>
                   <div className="col-span-2">
@@ -412,7 +414,7 @@ const OrderManagement = () => {
                 <h4 className="text-sm font-medium text-gray-900 mb-3">
                   Available Delivery Personnel
                 </h4>
-                {availableDeliveryPersonnel.length > 0 ? (
+                {availableDeliveryPersonnel?.length > 0 ? (
                   <div className="space-y-3">
                     {availableDeliveryPersonnel.map((person) => (
                       <div

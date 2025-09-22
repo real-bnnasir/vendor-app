@@ -60,7 +60,7 @@ const Orders = () => {
 
   const filteredOrders = storeOrders.filter((order) => {
     const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
@@ -176,12 +176,41 @@ const Orders = () => {
     setSelectedOrders([]);
   };
 
+  // const handleStatusUpdate = async (orderId, newStatus) => {
+  //   try {
+  //     setLoading(true);
+  //     _put(
+  //       `api/update_order_status`,
+  //       { order_id: orderId, status: newStatus, vendor_id: vendorId },
+  //       (resp) => {
+  //         if (resp.success) {
+  //           setOrders((prev) =>
+  //             prev.map((order) =>
+  //               order.id === orderId ? { ...order, status: newStatus } : order
+  //             )
+  //           );
+  //         } else {
+  //           console.error(resp.message);
+  //         }
+  //       }
+  //     );
+  //   } catch (err) {
+  //     console.error("Failed to update order:", err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       setLoading(true);
       _put(
         `api/update_order_status/${vendorId}`,
-        { order_id: orderId, status: newStatus },
+        {
+          order_id: orderId,
+          vendor_id: vendorId, 
+          status: newStatus,
+        },
         (resp) => {
           if (resp.success) {
             setOrders((prev) =>
@@ -200,7 +229,6 @@ const Orders = () => {
       setLoading(false);
     }
   };
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -340,7 +368,7 @@ const Orders = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {order.id}
+                      {order.order_id}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -348,7 +376,7 @@ const Orders = () => {
                       {order.items?.[0]?.image && (
                         <img
                           className="h-8 w-8 rounded-full"
-                          src={order.items[0].image}
+                          src={order.items[0].product_image}
                           alt={order.first_name}
                         />
                       )}
@@ -366,7 +394,7 @@ const Orders = () => {
                     <div className="text-sm text-gray-900">
                       {order.items?.map((item, index) => (
                         <div key={index}>
-                          {item.name} (×{item.quantity})
+                          {item.product_name} (×{item.quantity})
                         </div>
                       ))}
                     </div>
@@ -377,27 +405,37 @@ const Orders = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                        order.status
-                      )}`}
-                    >
-                      <span className="mr-1">
-                        {getStatusIcon(order.status)}
+                    {order.items?.map((item, idx) => (
+                      <span
+                        key={idx}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
+                          item.status
+                        )}`}
+                      >
+                        <span className="mr-1">
+                          {getStatusIcon(item.status)}
+                        </span>
+                        {item.status}
                       </span>
-                      {order.status}
-                    </span>
+                    ))}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(order.date).toLocaleDateString()}
+                    {new Date(order.order_date).toLocaleDateString()}
                   </td>
+                  {/* {JSON.stringify(order)} */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      {order.status === "processing" && (
+                      {order.items?.every(
+                        (item) => item.status === "pending"
+                      ) && (
                         <>
                           <button
                             onClick={() =>
-                              handleStatusUpdate(order.id, "confirmed")
+                              handleStatusUpdate(
+                                order.order_id,
+                                "confirmed",
+                                order.vendor_id
+                              )
                             }
                             className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
                           >
@@ -406,7 +444,7 @@ const Orders = () => {
                           </button>
                           <button
                             onClick={() =>
-                              handleStatusUpdate(order.id, "cancelled")
+                              handleStatusUpdate(order.order_id, "cancelled")
                             }
                             className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
                           >
@@ -415,17 +453,20 @@ const Orders = () => {
                           </button>
                         </>
                       )}
-                      {order.status === "confirmed" && (
+                      {order.items?.every(
+                        (item) => item.status === "confirmed"
+                      ) && (
                         <button
                           onClick={() =>
-                            handleStatusUpdate(order.id, "shipped")
+                            handleStatusUpdate(order.order_id, "verified")
                           }
                           className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
                         >
                           <Truck size={12} className="mr-1" />
-                          Ship
+                          Verify
                         </button>
                       )}
+
                       <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
                         <Eye size={14} />
                       </button>

@@ -236,7 +236,7 @@ const Order_Detail = ({
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           Price
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-xs font-medium text-gray-500 uppercase">
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           Status
                         </th>
                       </tr>

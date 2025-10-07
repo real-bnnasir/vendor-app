@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useAdmin } from "../../contex/AdminContext";
+import { useAdmin } from "../../../contex/AdminContext";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -17,9 +18,11 @@ import {
   Clock,
   X,
   UserPlus,
+  CheckCircle,
 } from "lucide-react";
 
 const DeliveryManagement = () => {
+  const navigate = useNavigate();
   const {
     deliveryPersonnel,
     addDeliveryPerson,
@@ -168,13 +171,22 @@ const DeliveryManagement = () => {
             Manage delivery personnel and assign orders.
           </p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-        >
-          <Plus size={16} className="mr-2" />
-          Add Delivery Person
-        </button>
+        <div className="mt-4 sm:mt-0 flex space-x-3">
+          <button
+            onClick={() => navigate("/admin/delivery/add")}
+            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <Plus size={16} className="mr-2" />
+            Add New Person
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <UserPlus size={16} className="mr-2" />
+            Quick Add
+          </button>
+        </div>
       </div>
 
       {/* Add/Edit Form */}
@@ -619,13 +631,22 @@ const DeliveryManagement = () => {
               : "Get started by adding your first delivery person."}
           </p>
           {!searchTerm && filterStatus === "all" && (
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              <Plus size={16} className="mr-2" />
-              Add First Delivery Person
-            </button>
+            <div className="flex space-x-3 justify-center">
+              <button
+                onClick={() => navigate("/admin/delivery/add")}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <Plus size={16} className="mr-2" />
+                Add First Delivery Person
+              </button>
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <UserPlus size={16} className="mr-2" />
+                Quick Add
+              </button>
+            </div>
           )}
         </div>
       )}

@@ -54,15 +54,21 @@ const Products = () => {
   // };
 
   const getProducts = () => {
+    setLoading(true);
     _get(
       `api/get-products?shop_id="${userDetails.user_id}"`,
-      // setLoading(true),
       (resp) => {
-        setProducts(resp.result[0]);
+        if (resp.result && resp.result[0]) {
+          setProducts(resp.result[0]);
+        } else {
+          setProducts([]);
+        }
         setLoading(false);
       },
       (err) => {
-        setError(err);
+        console.error("Error fetching products:", err);
+        toast.error("Failed to load products");
+        setProducts([]);
         setLoading(false);
       }
     );
@@ -79,16 +85,19 @@ const Products = () => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         setLoading(true);
-        const response = await fetch(`${server_url}/api/products`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            product_id: productId,
-            query_type: "delete_product",
-          }),
-        });
+        const response = await fetch(
+          `${server_url}/api/delete-product/${productId }`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              product_id: productId,
+              query_type: "delete_product",
+            }),
+          }
+        );
 
         const data = await response.json();
 
@@ -135,6 +144,10 @@ const Products = () => {
     navigate(`/products/edit/${productId}`);
   };
 
+  const handleViewProduct = (productId) => {
+    navigate(`/products/view/${productId}`);
+  };
+
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center h-64">
@@ -155,7 +168,7 @@ const Products = () => {
         </div>
         <Link
           to="/products/add"
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-950 transition-colors"
         >
           <Plus size={16} className="mr-2" />
           Add Product
@@ -208,14 +221,22 @@ const Products = () => {
 
           return (
             <div
-              key={product.product_id}
+              key={product.id}
               className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
             >
               <div className="relative">
                 <img
-                  src={firstImage}
+                  src={
+                    firstImage.startsWith("http")
+                      ? firstImage
+                      : `${server_url}/uploads/${firstImage}`
+                  }
                   alt={product.product_name}
                   className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    e.target.src =
+                      "https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&dpr=2";
+                  }}
                 />
                 <div className="absolute top-2 right-2">
                   <div className="relative">
@@ -271,20 +292,20 @@ const Products = () => {
                 <div className="mt-4 flex space-x-2">
                   <button
                     className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                    onClick={() => navigate(`/products/${product.id}`)}
+                    onClick={() => handleViewProduct(product.product_id)}
                   >
                     <Eye size={14} className="mr-1" />
                     View
                   </button>
                   <button
-                    onClick={() => handleEditProduct(product.id)}
+                    onClick={() => handleEditProduct(product.product_id)}
                     className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
                   >
                     <Edit3 size={14} className="mr-1" />
                     Edit
                   </button>
                   <button
-                    onClick={() => deleteProduct(product.id)}
+                    onClick={() => deleteProduct(product.product_id)}
                     className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
                   >
                     <Trash2 size={14} />

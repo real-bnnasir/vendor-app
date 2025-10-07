@@ -30,46 +30,65 @@ const EditProduct = () => {
 
   // Fetch product data
   useEffect(() => {
-    if (!product_id) return;
+    if (!product_id) {
+      console.error("No product_id provided");
+      setLoading(false);
+      return;
+    }
 
+    console.log("Fetching product with ID:", product_id);
     setLoading(true);
 
+    // Fetch product details
     _get(
       `api/productsbyid/${product_id}`,
       (resp) => {
+        console.log("Product response:", resp);
         if (resp.result && resp.result[0]) {
           const product = resp.result[0];
           setFormData({
-            product_name: product.product_name,
-            product_description: product.product_description,
-            product_category: product.ctgry_id,
-            product_subcategory: product.product_subcategory,
-            product_price: product.product_price,
-            product_quantity: product.product_quantity,
-            product_status: product.product_status,
-            product_size: product.product_size,
+            product_name: product.product_name || "",
+            product_description: product.product_description || "",
+            product_category: product.ctgry_id || "",
+            product_subcategory: product.product_subcategory || "",
+            product_price: product.product_price || "",
+            product_quantity: product.product_quantity || "",
+            product_status: product.product_status || "Available",
+            product_size: product.product_size || "",
             weight: product.weight || "",
             dimensions: product.dimensions || "",
           });
 
           if (product.image_urls) {
-            setProdImages(product.image_urls.split(","));
+            setProdImages(product.image_urls.split(",").filter(img => img.trim() !== ""));
           }
+          toast.success("Product loaded successfully");
+        } else {
+          console.error("No product data found in response");
+          toast.error("Product not found");
         }
         setLoading(false);
       },
       (err) => {
+        console.error("Error fetching product:", err);
         toast.error("Failed to load product");
         setLoading(false);
       }
     );
 
+    // Fetch categories
     _get(
       `api/categories`,
       (resp) => {
-        setCategories(resp.results[0]);
+        console.log("Categories response:", resp);
+        if (resp.results && resp.results[0]) {
+          setCategories(resp.results[0]);
+        } else {
+          console.error("No categories found in response");
+        }
       },
       (err) => {
+        console.error("Error fetching categories:", err);
         toast.error("Failed to load categories");
       }
     );
@@ -267,8 +286,12 @@ const EditProduct = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="p-6 flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading product details...</p>
+          <p className="mt-2 text-sm text-gray-500">Product ID: {product_id}</p>
+        </div>
       </div>
     );
   }
@@ -279,12 +302,17 @@ const EditProduct = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <Package size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Product Not Found
+            Product ID Missing
           </h3>
           <p className="text-gray-600 mb-6">
-            The product you're looking for doesn't exist or you don't have
-            permission to edit it.
+            No product ID was provided in the URL. Please navigate to this page from the products list.
           </p>
+          <button
+            onClick={() => navigate("/products")}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Products
+          </button>
         </div>
       </div>
     );

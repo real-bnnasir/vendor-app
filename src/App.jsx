@@ -92,6 +92,7 @@ import AddProduct from "./pages/AddProduct";
 import Stores from "./pages/Stores";
 import AddStore from "./pages/AddStore";
 import EditProduct from "./pages/EditProduct";
+import ViewProduct from "./pages/ViewProduct";
 import Layout from "./component/Layout";
 import { StoreProvider } from "./contex/StoreContext";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -109,7 +110,8 @@ import Analytics from "./pages/Admin/Analytics";
 import Settings from "./pages/Admin/Settings";
 import { AuthProvider, useAuth } from "./contex/AuthContext";
 import OrderManagement from "./pages/Admin/OrderManagement";
-import DeliveryManagement from "./pages/Admin/DeliveryManagement";
+import DeliveryManagement from "./pages/Admin/Delivery/DeliveryManagement";
+import AddDelivery from "./pages/Admin/Delivery/AddDelivery";
 import SignupForm from "./component/SignupForm";
 
 const AppContent = () => {
@@ -140,6 +142,7 @@ const AppContent = () => {
               <Route path="/admin/customers" element={<CustomerManagement />} />
               <Route path="/admin/orders" element={<OrderManagement />} />
               <Route path="/admin/delivery" element={<DeliveryManagement />} />
+              <Route path="/admin/delivery/add" element={<AddDelivery />} />
               <Route path="/admin/banners" element={<BannerManagement />} />
               <Route path="/admin/analytics" element={<Analytics />} />
               <Route path="/admin/settings" element={<Settings />} />
@@ -161,7 +164,8 @@ const AppContent = () => {
             <Route path="/stores/add" element={<AddStore />} />
             <Route path="/products" element={<Products />} />
             <Route path="/products/add" element={<AddProduct />} />
-            <Route path="/products/edit/:id" element={<EditProduct />} />
+            <Route path="/products/view/:product_id" element={<ViewProduct />} />
+            <Route path="/products/edit/:product_id" element={<EditProduct />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="*" element={<Dashboard />} />
           </Routes>
